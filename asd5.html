@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metalúrgica San Patricio</title>
+  <style>
+    body {
+      background-color: #007bff;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background-color: white;
+      color: black;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+    input, select {
+      font-size: 16px;
+      padding: 10px;
+      margin: 10px;
+      border: none;
+      border-radius: 5px;
+    }
+    .button {
+      background-color: #0056b3;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .button:hover {
+      background-color: #004080;
+    }
+    .edit-button {
+      background-color: #f0ad4e;
+    }
+    .edit-button:hover {
+      background-color: #ec971f;
+    }
+    .history-table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background-color: white;
+      color: black;
+    }
+    .material-list {
+      margin: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      display: inline-block;
+    }
+    .material-item {
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Metalúrgica San Patricio</h1>
+  <h2>Gestión de Stock</h2>
+
+  <h3>Stock de Materiales</h3>
+  <table id="stock-table">
+    <tr>
+      <th>Producto</th>
+      <th>Stock</th>
+      <th>Acción</th>
+    </tr>
+    <!-- Los productos se cargarán aquí -->
+  </table>
+
+  <h3>Realizar Venta</h3>
+  <form id="sales-form">
+    <label for="cocina">Seleccione una Cocina:</label>
+    <select id="cocina">
+      <option value="cocina1">Cocina 1</option>
+      <option value="cocina2">Cocina 2</option>
+    </select>
+    <button type="button" class="button" onclick="showMaterials()">Ver Materiales</button>
+  </form>
+
+  <div id="materials-container" style="display: none;">
+    <h3>Materiales de la Cocina</h3>
+    <div id="materials-list" class="material-list">
+      <!-- Los materiales de la cocina seleccionada se mostrarán aquí -->
+    </div>
+    <button class="button" onclick="processSale()">Realizar Venta</button>
+  </div>
+
+  <h3>Historial de Ventas</h3>
+  <table class="history-table" id="history-table">
+    <tr>
+      <th>Cocina</th>
+      <th>Materiales Descontados</th>
+      <th>Fecha</th>
+      <th>Acción</th>
+    </tr>
+    <!-- Historial de ventas se cargará aquí -->
+  </table>
+
+  <script>
+    // Cargar los datos del localStorage o usar valores predeterminados si no hay datos guardados
+    let stock = JSON.parse(localStorage.getItem('stock')) || {
+      "Rejilla 53": 1390,
+      "Rejillas 56": 4800,
+      "Perillas negras": 11800,
+      "Perillas blancas": 3000,
+      "Manija de horno negra plastica 1200": 1200,
+      "Manija de horno negra plastica 1000": 1000,
+      "Manija de hierro 304 mm": 4400,
+      "Manija de hierro 430 mm": 1100,
+      "Rejilla semi industrial": 90,
+      "Vidrio de puerta 53": 3200,
+      "Vidrio de puerta 56": 2160,
+      "Respaldo 53 peabody": 2190,
+      "Respaldo 56": 3950,
+      "Respaldo 53 nextnex": 190,
+      "Respaldo 56 nextnex": 56,
+      "Perillas gastronómicas": 1200,
+      "Caja rodillo metalhurli": 8400,
+      "Bisagras metalhurli AB": 8400,
+      "Tapas Pucarat": 6500,
+      "Bases Pucarat": 11000,
+      "Portapico Pucarat": 8200,
+      "Tapas Perotti": 5950,
+      "Bases Perotti": 5800,
+      "Portapicos Perotti": 5200,
+      "Gomas 53": 2800,
+      "Gomas 56": 600,
+      "Bolsa de embalaje": 13000,
+      "Termocupla 250m": 32000,
+      "Termocupla 450m": 33000,
+      "Termocupla horno": 25800,
+      "Valvula fagas": 1400,
+      "Valvula Armengol127": 2400,
+      "Valvula con rosca": 1610,
+      "Virolas sp": 74500,
+      "Inyector 0,80": 42900,
+      "Inyector 1,10": 20000,
+      "Inyector 1,5": 7000,
+      "Tuercas 1/4y1/8": 50360,
+      "Rollo caño 6": 0
+    };
+
+    let ventas = {
+      cocina1: [
+        { product: "Rejilla 53", quantity: 1 },
+        { product: "Respaldo 56", quantity: 4 }
+      ],
+      cocina2: [
+        { product: "Rejillas 56", quantity: 1 },
+        { product: "Vidrio de puerta 56", quantity: 1 }
+      ]
+    };
+
+    let historialVentas = JSON.parse(localStorage.getItem('historialVentas')) || [];
+
+    function displayStock() {
+      const stockTable = document.getElementById("stock-table");
+      stockTable.innerHTML = `
+        <tr>
+          <th>Producto</th>
+          <th>Stock</th>
+          <th>Acción</th>
+        </tr>
+      `;
+      
+      for (let product in stock) {
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${product}</td>
+          <td>${stock[product]}</td>
+          <td><button class="button edit-button" onclick="editStock('${product}')">Editar</button></td>
+        `;
+        stockTable.appendChild(tr);
+      }
+    }
+
+    function editStock(product) {
+      let newStock = prompt(`Ingrese el nuevo stock para ${product}:`, stock[product]);
+      if (newStock !== null && newStock !== "") {
+        stock[product] = parseInt(newStock);
+        // Guardar el nuevo stock en el localStorage
+        localStorage.setItem('stock', JSON.stringify(stock));
+        displayStock();
+      }
+    }
+
+    function showMaterials() {
+      const cocina = document.getElementById("cocina").value;
+      const materialsList = ventas[cocina];
+      const materialsContainer = document.getElementById("materials-list");
+      materialsContainer.innerHTML = "";
+
+      materialsList.forEach((item, index) => {
+        const materialItem = document.createElement("div");
+        materialItem.className = "material-item";
+        materialItem.innerHTML = `
+          <label>${item.product} (Stock disponible: ${stock[item.product]})</label>
+          <input type="number" id="quantity-${index}" value="${item.quantity}" min="0" max="${stock[item.product]}">
+          <button class="button" onclick="removeMaterial(${index})">Eliminar</button>
+        `;
+        materialsContainer.appendChild(materialItem);
+      });
+
+      document.getElementById("materials-container").style.display = "block";
+    }
+
+    function removeMaterial(index) {
+      const cocina = document.getElementById("cocina").value;
+      ventas[cocina].splice(index, 1);
+      // Guardar los cambios en el localStorage
+      localStorage.setItem('ventas', JSON.stringify(ventas));
+      showMaterials();
+    }
+
+    function processSale() {
+      const cocina = document.getElementById("cocina").value;
+      const materialsList = ventas[cocina];
+      const materialsDescontados = [];
+
+      materialsList.forEach((item, index) => {
+        const quantityInput = document.getElementById(`quantity-${index}`);
+        let newQuantity = parseInt(quantityInput.value);
+        if (newQuantity > 0) {
+          stock[item.product] -= newQuantity;
+          materialsDescontados.push(`${item.product}: ${newQuantity}`);
+        }
+      });
+
+      const fechaVenta = new Date().toLocaleString();
+      historialVentas.push({
+        cocina,
+        materialesDescontados: materialsDescontados.join(", "),
+        fecha: fechaVenta
+      });
+
+      // Guardar el historial de ventas en el localStorage
+      localStorage.setItem('historialVentas', JSON.stringify(historialVentas));
+
+      // Mostrar el historial
+      displayHistory();
+      displayStock();
+
+      // Limpiar formulario
+      document.getElementById("materials-container").style.display = "none";
+    }
+
+    function displayHistory() {
+      const historyTable = document.getElementById("history-table");
+      historyTable.innerHTML = `
+        <tr>
+          <th>Cocina</th>
+          <th>Materiales Descontados</th>
+          <th>Fecha</th>
+          <th>Acción</th>
+        </tr>
+      `;
+      
+      historialVentas.forEach((venta, index) => {
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${venta.cocina}</td>
+          <td>${venta.materialesDescontados}</td>
+          <td>${venta.fecha}</td>
+          <td><button class="button" onclick="removeSale(${index})">Eliminar</button></td>
+        `;
+        historyTable.appendChild(tr);
+      });
+    }
+
+    function removeSale(index) {
+      historialVentas.splice(index, 1);
+      // Guardar el historial actualizado en el localStorage
+      localStorage.setItem('historialVentas', JSON.stringify(historialVentas));
+      displayHistory();
+    }
+
+    // Cargar datos al iniciar
+    window.onload = function() {
+      displayStock();
+      displayHistory();
+    };
+  </script>
+
+</body>
+</html>
